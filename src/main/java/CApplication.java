@@ -1,4 +1,4 @@
-import java.sql.SQLException;
+import connect.CConnect;
 
 public class CApplication {
     public static void main(String[] args) throws Exception {

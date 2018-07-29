@@ -12,7 +12,7 @@
     </servlet>
     <servlet-mapping>
         <servlet-name>ProcessingServlet</servlet-name>
-        <url-pattern>index.html</url-pattern>
+        <url-pattern>/</url-pattern>
     </servlet-mapping>
 
 </web-app>
