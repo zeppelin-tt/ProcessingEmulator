@@ -6,14 +6,25 @@
 
     <display-name>Test</display-name>
 
+    <context-param>
+        <param-name>resteasy.servlet.mapping.prefix</param-name>
+        <param-value>/rest</param-value>
+    </context-param>
+
     <servlet>
-        <servlet-name>ProcessingServlet</servlet-name>
-        <servlet-class>servlet.ProcessingServlet</servlet-class>
+        <servlet-name>resteasy-servlet</servlet-name>
+        <servlet-class>
+            org.jboss.resteasy.plugins.server.servlet.HttpServletDispatcher
+        </servlet-class>
+        <init-param>
+            <param-name>javax.ws.rs.Application</param-name>
+            <param-value>servlet.MainApplication</param-value>
+        </init-param>
     </servlet>
+
     <servlet-mapping>
-        <servlet-name>ProcessingServlet</servlet-name>
-        <url-pattern>/</url-pattern>
+        <servlet-name>resteasy-servlet</servlet-name>
+        <url-pattern>/rest/*</url-pattern>
     </servlet-mapping>
 
 </web-app>
-

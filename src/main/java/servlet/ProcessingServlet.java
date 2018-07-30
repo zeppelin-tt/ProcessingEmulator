@@ -1,37 +1,61 @@
 package servlet;
 
-import connect.CConnect;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import connect.CConnect;
+
+import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
+import java.util.Arrays;
 
-@Path("/account")
+
+@Path("/action")
 public class ProcessingServlet {
-    private static final Logger LOG = LoggerFactory.getLogger(ProcessingServlet.class);
+
     CConnect connect = new CConnect();
 
     public ProcessingServlet() throws SQLException {
     }
 
+
     @GET
-    @Path("/helloworld")
-    @Consumes("application/json")
-    @Produces("application/json")
-    public Response helloworld() throws SQLException {
-        boolean result = connect.createAcc("Вася", "Вася", "Вася");
-        if(result) {
-            return Response.ok().build();
+    // TODO: 30.07.2018 нужна кириллица
+    @Path("/{param}")
+//    @Consumes("application/json")
+//    @Produces(MediaType.APPLICATION_XML + ";charset=utf-8")
+    public Response doGet(@PathParam("param") String query) throws SQLException {
+        String operation = query.substring(0, query.indexOf("="));
+        String paramStr = query.substring(query.indexOf("=") + 1);
+        String[] params = paramStr.split("&");
+        boolean result = false;
+        switch (operation) {
+            case "create":
+                result = connect.createAcc(params[0], params[1], params[2]);
+                break;
+            case "close":
+                result = connect.closeAcc(paramStr);
+                break;
+            case "block":
+                result = connect.blockAcc(paramStr);
+                break;
+            case "transfer_minus":
+                result = connect.transfer(params[0], -Float.valueOf(params[1]));
+                break;
+            case "transfer_plus":
+                result = connect.transfer(params[0], Float.valueOf(params[1]));
+                break;
+            case "transfer_to":
+                result = connect.transfer(params[0], params[1], Float.valueOf(params[2]));
+                break;
+        }
+
+        if (result) {
+            String resultStr = "Операция успешно выполнена!";
+            return Response.status(200).entity(resultStr).build();
         } else {
             return Response.status(Response.Status.BAD_REQUEST).build();
         }
+
     }
-
-
 
 }

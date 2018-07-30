@@ -77,7 +77,7 @@ public class CConnect {
                 accId = rs.getInt("id");
                 balance = rs.getFloat("balance");
             }
-            String sqlUpd = String.format("update public.accounts set balance = '%1$s', is_active = %2$s where accnum = '%3$s'", 0, "true", accNum);
+            String sqlUpd = String.format("update public.accounts set balance = '%1$s', is_active = %2$s where accnum = '%3$s'", 0, "false", accNum);
             statement.execute(sqlUpd);
             statement.execute(String.format(INSERT_HISTORY, accId, 3, -balance, "CURRENT_TIMESTAMP"));
             // TODO: 20.07.2018 может сделать timestamp неуникальным?
