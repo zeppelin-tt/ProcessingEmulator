@@ -5,7 +5,7 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CConnect {
+public class Connect {
 
     private Connection connection;
     private Statement statement;
@@ -13,9 +13,9 @@ public class CConnect {
     private static final String SELECT_ACC_ROW = "select * from public.accounts where accnum = '%s'";
     private boolean success = true;
 
-    Logger LOG = LoggerFactory.getLogger(CConnect.class);
+    Logger LOG = LoggerFactory.getLogger(Connect.class);
 
-    public CConnect() throws SQLException {
+    public Connect() throws SQLException {
         openConnection();
     }
 
@@ -150,6 +150,7 @@ public class CConnect {
         return success;
     }
 
+    // TODO: 02.08.2018 при переводе на заблокированный счет дениги снимаются. Добавить исключение и ролбэк
     public boolean transfer(String accNumFrom, String accNumTo, float money) throws SQLException {
         connection.setAutoCommit(false);
         try {
