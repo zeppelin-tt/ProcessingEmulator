@@ -1,12 +1,14 @@
 package servlet;
 
+import org.json.JSONObject;
+
 public class ServerResponse {
 
     private String success;
     private String errorMessage;
-    private String data;
+    private ResponseData data;
 
-    public ServerResponse(String success, String errorMessage, String data) {
+    public ServerResponse(String success, String errorMessage, ResponseData data) {
         this.success = success;
         this.errorMessage = errorMessage;
         this.data = data;
@@ -16,7 +18,7 @@ public class ServerResponse {
         this.success = success;
     }
 
-    public void setData(String success) {
+    public void setData(ResponseData data) {
         this.data = data;
     }
 
@@ -32,7 +34,7 @@ public class ServerResponse {
         return errorMessage;
     }
 
-    public String getData() {
+    public ResponseData getData() {
         return data;
     }
 }

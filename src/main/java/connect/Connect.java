@@ -3,10 +3,10 @@ package connect;
 import java.sql.*;
 import java.util.*;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import servlet.ResponseData;
+import servlet.TableFields;
 
 public class Connect {
 
@@ -14,9 +14,11 @@ public class Connect {
     private Statement statement;
     private static final String INSERT_HISTORY = "insert into public.history values (default, '%1$s', '%2$s', '%3$s', %4$s) RETURNING id";
     private static final String SELECT_ACC_ROW = "select * from public.accounts where accnum = '%s'";
+    private static final String SELECT_COUNT_ROWS = "select count(*) from public.%s";
     private boolean success = true;
 
     Logger LOG = LoggerFactory.getLogger(Connect.class);
+    public static final int LIMIT_ROWS = 10;
 
     public Connect() throws SQLException {
         openConnection();
@@ -225,23 +227,57 @@ public class Connect {
         return accId;
     }
 
-    public JSONArray getPresentationView() throws SQLException {
-        String sqlPresentation = "SELECT * FROM presentation_view";
-        PreparedStatement preparedStatement = connection.prepareStatement(sqlPresentation);
+
+
+    public ResponseData getResponseDataByPage(String numPage) throws SQLException, NoSuchFieldException {
+        Integer count = getCountRows("presentation_view");
+        int pageNumber = Integer.parseInt(numPage);
+        if (pageNumber * LIMIT_ROWS - 10 > count) {
+            throw new NoSuchFieldException("Такой страницы не существует");
+            }
+        return new ResponseData(getViewByPage(pageNumber), String.valueOf(count));
+    }
+
+    private List<TableFields> getViewByPage(int numPage) throws SQLException {
+        return getViewByPage(numPage, null, null);
+    }
+
+    private List<TableFields> getViewByPage(int numPage, String field, String regExp) throws SQLException {
+        String filter = "";
+        if (field != null) {
+            filter = String.format("WHERE %1$s ~* '%2$s'", field, regExp);
+        }
+        int startRow = numPage * LIMIT_ROWS;
+        String sqlPresentation = String.format("SELECT * FROM presentation_view %3$s LIMIT '%1$s' OFFSET '%2$s'", LIMIT_ROWS, startRow, filter);
+        return getFromView(sqlPresentation);
+    }
+
+    private Integer getCountRows(String nameTable) throws SQLException {
+        Integer count = null;
+        ResultSet rs = statement.executeQuery(String.format(SELECT_COUNT_ROWS, nameTable));
+        if (rs.next()) {
+            count = rs.getInt("count");
+        }
+        return count;
+    }
+
+    private List<TableFields> getFromView(String sql) throws SQLException {
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
         preparedStatement.execute();
         ResultSet rs = preparedStatement.executeQuery();
-        ResultSetMetaData rsmd = rs.getMetaData();
-        int columnCount = rsmd.getColumnCount();
-        JSONArray jsonArray = new JSONArray();
+        List<TableFields> ltf = new ArrayList<>();
         while (rs.next()) {
-            JSONObject jo = new JSONObject();
-            for (int i = 1; i <= columnCount; i++) {
-                String colName = rsmd.getColumnName(i);
-                jo.put(colName, rs.getObject(i));
-            }
-            jsonArray.put(jo);
+            ltf.add(new TableFields(
+                    rs.getString("id"),
+                    rs.getString("accnum"),
+                    rs.getString("initials"),
+                    rs.getString("balance"),
+                    rs.getString("action"),
+                    rs.getString("last_operation_time"),
+                    rs.getString("create_time")
+            ));
         }
-        return jsonArray;
+        return ltf;
     }
 
     private Map<String, String> getRowByAccNum(String accNum) throws SQLException {

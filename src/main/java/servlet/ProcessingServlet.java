@@ -2,8 +2,6 @@ package servlet;
 
 
 import connect.Connect;
-import org.json.JSONArray;
-import org.json.JSONObject;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -60,22 +58,19 @@ public class ProcessingServlet {
 //    }
 
     @GET
-    @Path("/view")
+    @Path("/{numPage}/view/{numPage}")
     @Produces(MediaType.APPLICATION_JSON)
-    public ServerResponse getView() {
+    public ServerResponse getView(@PathParam("numPage") String numPage) {
         boolean result = false;
         String message = null;
-        String data = null;
+        ResponseData rd = null;
         try {
-            JSONArray jsonArray = connect.getPresentationView();
-            JSONObject jsonObject = new JSONObject().put("view", jsonArray);
-            data = jsonObject.toString();
+            rd = connect.getResponseDataByPage(numPage);
             result = true;
-        } catch (SQLException e) {
+        } catch (Exception e) {
             message = e.getMessage();
         }
-
-        return new ServerResponse(String.valueOf(result), message, data);
+        return new ServerResponse(String.valueOf(result), message, rd);
     }
 
     @POST
@@ -85,7 +80,6 @@ public class ProcessingServlet {
     public ServerResponse doAction(Action action) {
         boolean result = false;
         String message = null;
-        String data = null;
         try {
             switch (action.getType()) {
                 case "create":
@@ -110,7 +104,7 @@ public class ProcessingServlet {
         } catch (Exception e) {
             message = e.getMessage();
         }
-        return new ServerResponse(String.valueOf(result), message, data);
+        return new ServerResponse(String.valueOf(result), message, null);
     }
 
 

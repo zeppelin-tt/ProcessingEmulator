@@ -10,6 +10,8 @@ import org.json.JSONArray;
 public class Test {
     public static void main(String[] args) throws SQLException {
         Connect c = new Connect();
-        c.getPresentationView().forEach(System.out::println);
+//        System.out.println(c.getCountRows("presentation_view"));
+//        c.getPresentationView(String.valueOf(0)).forEach(System.out::println);
+
     }
 }
