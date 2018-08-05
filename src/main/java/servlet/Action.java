@@ -1,6 +1,6 @@
 package servlet;
 
-public class Actions {
+public class Action {
 
     private String type;
     private String lastName;
@@ -35,7 +35,6 @@ public class Actions {
     }
 
     public String getLastName() {
-
         return lastName;
     }
 

@@ -2,6 +2,9 @@ package connect;
 
 import java.sql.*;
 import java.util.*;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +84,8 @@ public class Connect {
             statement.execute(sqlUpd);
             statement.execute(String.format(INSERT_HISTORY, accId, 3, -balance, "CURRENT_TIMESTAMP"));
             // TODO: 20.07.2018 может сделать timestamp неуникальным?
-            statement.execute(String.format(INSERT_HISTORY, accId, 4, 0, "CURRENT_TIMESTAMP + INTERVAL '0.000001' SECOND"));
+//            statement.execute(String.format(INSERT_HISTORY, accId, 4, 0, "CURRENT_TIMESTAMP + INTERVAL '0.000001' SECOND"));
+            statement.execute(String.format(INSERT_HISTORY, accId, 4, 0, "CURRENT_TIMESTAMP"));
         } catch (SQLException e) {
             connection.rollback();
             success = false;
@@ -92,7 +96,7 @@ public class Connect {
         return success;
     }
 
-    // TODO: 20.07.2018 или все же сделать будевым метод?
+    // TODO: 20.07.2018 или все же сделать булевым метод?
     private void checkAccNum(String accNum) throws SQLException {
         ResultSet rs = statement.executeQuery(String.format(SELECT_ACC_ROW, accNum));
         Integer accId = null;
@@ -219,6 +223,25 @@ public class Connect {
             accId = rs.getInt("id");
         }
         return accId;
+    }
+
+    public JSONArray getPresentationView() throws SQLException {
+        String sqlPresentation = "SELECT * FROM presentation_view";
+        PreparedStatement preparedStatement = connection.prepareStatement(sqlPresentation);
+        preparedStatement.execute();
+        ResultSet rs = preparedStatement.executeQuery();
+        ResultSetMetaData rsmd = rs.getMetaData();
+        int columnCount = rsmd.getColumnCount();
+        JSONArray jsonArray = new JSONArray();
+        while (rs.next()) {
+            JSONObject jo = new JSONObject();
+            for (int i = 1; i <= columnCount; i++) {
+                String colName = rsmd.getColumnName(i);
+                jo.put(colName, rs.getObject(i));
+            }
+            jsonArray.put(jo);
+        }
+        return jsonArray;
     }
 
     private Map<String, String> getRowByAccNum(String accNum) throws SQLException {

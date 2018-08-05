@@ -58,5 +58,6 @@
     <orderEntry type="library" name="Maven: javax.xml.bind:jsr173_api:1.0" level="project" />
     <orderEntry type="library" name="Maven: org.jboss.resteasy:resteasy-servlet-initializer:3.0.19.Final" level="project" />
     <orderEntry type="library" name="Maven: org.jboss.resteasy:async-http-servlet-3.0:3.0.19.Final" level="project" />
+    <orderEntry type="library" name="Maven: org.json:json:20160807" level="project" />
   </component>
 </module>

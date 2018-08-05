@@ -67,6 +67,11 @@
             <artifactId>resteasy-servlet-initializer</artifactId>
             <version>3.0.19.Final</version>
         </dependency>
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20160807</version>
+        </dependency>
     </dependencies>
 
 </project>

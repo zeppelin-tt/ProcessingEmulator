@@ -2,6 +2,8 @@ package servlet;
 
 
 import connect.Connect;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -29,7 +31,7 @@ public class ProcessingServlet {
 //        boolean result = false;
 //        switch (operation) {
 //            case "create":
-//                result = connect.createAcc(params[0], params[1], params[2]);
+//                result = connect.doAction(params[0], params[1], params[2]);
 //                break;
 //            case "close":
 //                result = connect.closeAcc(paramStr);
@@ -57,52 +59,58 @@ public class ProcessingServlet {
 //
 //    }
 
-//    @GET
-//    @Path("/action")
-//    @Produces("application/json")
-//    public Actions getCreateAcc() {
-//
-//        Actions actions = new Actions();
-//        actions.setLastName("Щенников");
-//        actions.setFirstName("Максим");
-//        actions.setPatronymic("Владимирович");
-//
-//        return actions;
-//
-//    }
+    @GET
+    @Path("/view")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ServerResponse getView() {
+        boolean result = false;
+        String message = null;
+        String data = null;
+        try {
+            JSONArray jsonArray = connect.getPresentationView();
+            JSONObject jsonObject = new JSONObject().put("view", jsonArray);
+            data = jsonObject.toString();
+            result = true;
+        } catch (SQLException e) {
+            message = e.getMessage();
+        }
+
+        return new ServerResponse(String.valueOf(result), message, data);
+    }
 
     @POST
     @Path("/action")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public ServerResponse createAcc(Actions actions) {
+    public ServerResponse doAction(Action action) {
         boolean result = false;
         String message = null;
+        String data = null;
         try {
-            switch (actions.getType()) {
+            switch (action.getType()) {
                 case "create":
-                    result = connect.createAcc(actions.getLastName(), actions.getFirstName(), actions.getPatronymic());
+                    result = connect.createAcc(action.getLastName(), action.getFirstName(), action.getPatronymic());
                     break;
                 case "close":
-                    result = connect.closeAcc(actions.getAccNum());
+                    result = connect.closeAcc(action.getAccNum());
                     break;
                 case "block":
-                    result = connect.blockAcc(actions.getAccNum());
+                    result = connect.blockAcc(action.getAccNum());
                     break;
                 case "transfer_minus":
-                    result = connect.transfer(actions.getAccNum(), -Float.valueOf(actions.getMoney()));
+                    result = connect.transfer(action.getAccNum(), -Float.valueOf(action.getMoney()));
                     break;
                 case "transfer_plus":
-                    result = connect.transfer(actions.getAccNum(), Float.valueOf(actions.getMoney()));
+                    result = connect.transfer(action.getAccNum(), Float.valueOf(action.getMoney()));
                     break;
                 case "transfer_to":
-                    result = connect.transfer(actions.getAccNum(), actions.getSecondAccNum(), Float.valueOf(actions.getMoney()));
+                    result = connect.transfer(action.getAccNum(), action.getSecondAccNum(), Float.valueOf(action.getMoney()));
                     break;
             }
         } catch (Exception e) {
             message = e.getMessage();
         }
-        return new ServerResponse(String.valueOf(result), message);
+        return new ServerResponse(String.valueOf(result), message, data);
     }
 
 
@@ -110,15 +118,15 @@ public class ProcessingServlet {
 //    @Path("/create")
 //    @Consumes("application/json")
 //    @Produces("application/json")
-//    public boolean createAcc(Actions actions) throws SQLException {
-//        return connect.createAcc(actions.getLastName(), actions.getFirstName(), actions.getPatronymic());
+//    public boolean doAction(Action actions) throws SQLException {
+//        return connect.doAction(actions.getLastName(), actions.getFirstName(), actions.getPatronymic());
 //    }
 //
 //    @POST
 //    @Path("/close")
 //    @Consumes("application/json")
 //    @Produces("application/json")
-//    public boolean closeAcc (Actions actions) throws SQLException {
+//    public boolean closeAcc (Action actions) throws SQLException {
 //        return connect.closeAcc(actions.getAccNum());
 //
 //    }
@@ -127,7 +135,7 @@ public class ProcessingServlet {
 //    @Path("/block")
 //    @Consumes("application/json")
 //    @Produces("application/json")
-//    public boolean blockAcc(Actions actions) throws SQLException {
+//    public boolean blockAcc(Action actions) throws SQLException {
 //        return connect.blockAcc(actions.getAccNum());
 //    }
 //
@@ -135,7 +143,7 @@ public class ProcessingServlet {
 //    @Path("/transfer")
 //    @Consumes("application/json")
 //    @Produces("application/json")
-//    public boolean transfer(Actions actions) throws SQLException {
+//    public boolean transfer(Action actions) throws SQLException {
 //        if (actions.getSecondAccNum() != null) {
 //            return connect.transfer(actions.getAccNum(), actions.getSecondAccNum(), Float.valueOf(actions.getMoney()));
 //        } else {
