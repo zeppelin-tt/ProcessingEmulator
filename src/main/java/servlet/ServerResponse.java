@@ -1,7 +1,5 @@
 package servlet;
 
-import org.json.JSONObject;
-
 public class ServerResponse {
 
     private String success;

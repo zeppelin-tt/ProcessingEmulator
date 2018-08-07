@@ -5,6 +5,7 @@ import java.util.*;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import servlet.FilteredRequest;
 import servlet.ResponseData;
 import servlet.TableFields;
 
@@ -156,6 +157,7 @@ public class Connect {
         return success;
     }
 
+    // TODO: 06.08.2018 вообще не переводятся сейчас! обязательно починить!
     // TODO: 02.08.2018 при переводе на заблокированный счет дениги снимаются. Добавить исключение и ролбэк
     public boolean transfer(String accNumFrom, String accNumTo, float money) throws SQLException {
         connection.setAutoCommit(false);
@@ -228,25 +230,59 @@ public class Connect {
     }
 
 
+    public String buildFilter(FilteredRequest fr) {
+        StringBuilder filter = new StringBuilder();
+        filter.append("where");
+        String accNum = fr.getAccNum();
+        String initials = fr.getInitials();
+        String balance = fr.getBalance();
+        String action = fr.getAction();
+        String lastOpTime = fr.getLastOpTime();
+        String createTime = fr.getCreateTime();
+        if (accNum != null) {
+            filter.append(" accnum ~* '").append(accNum).append("'");
+        }
+        if (initials != null) {
+            filter.append(" initials ~* '").append(initials).append("'");
+        }
+        if (balance != null) {
+            filter.append(" balance ~* '").append(balance).append("'");
+        }
+        if (action != null) {
+            filter.append(" action ~* '").append(action).append("'");
+        }
+        if (lastOpTime != null) {
+            filter.append(" last_operation_time ~* '").append(lastOpTime).append("'");
+        }
+        if (createTime != null) {
+            filter.append(" create_time ~* '").append(createTime).append("'");
+        }
+        return filter.toString();
+    }
+
 
     public ResponseData getResponseDataByPage(String numPage) throws SQLException, NoSuchFieldException {
-        Integer count = getCountRows("presentation_view");
+        int count = getCountRows("presentation_view");
         int pageNumber = Integer.parseInt(numPage);
-        if (pageNumber * LIMIT_ROWS - 10 > count) {
+        checkPageNumber(pageNumber, count);
+        return new ResponseData(getViewByPage(pageNumber, ""), String.valueOf(count));
+    }
+
+    public ResponseData getResponseDataByPage(FilteredRequest filteredRequest) throws SQLException, NoSuchFieldException {
+        int count = getCountRows("presentation_view");
+        int pageNumber = Integer.parseInt(filteredRequest.getNumPage());
+        checkPageNumber(pageNumber, count);
+        String filter = buildFilter(filteredRequest);
+        return new ResponseData(getViewByPage(pageNumber, filter), String.valueOf(count));
+    }
+
+    private void checkPageNumber(int pageNum, int count) throws NoSuchFieldException {
+        if (pageNum * (LIMIT_ROWS - 1) > count) {
             throw new NoSuchFieldException("Такой страницы не существует");
-            }
-        return new ResponseData(getViewByPage(pageNumber), String.valueOf(count));
-    }
-
-    private List<TableFields> getViewByPage(int numPage) throws SQLException {
-        return getViewByPage(numPage, null, null);
-    }
-
-    private List<TableFields> getViewByPage(int numPage, String field, String regExp) throws SQLException {
-        String filter = "";
-        if (field != null) {
-            filter = String.format("WHERE %1$s ~* '%2$s'", field, regExp);
         }
+    }
+
+    private List<TableFields> getViewByPage(int numPage, String filter) throws SQLException {
         int startRow = numPage * LIMIT_ROWS;
         String sqlPresentation = String.format("SELECT * FROM presentation_view %3$s LIMIT '%1$s' OFFSET '%2$s'", LIMIT_ROWS, startRow, filter);
         return getFromView(sqlPresentation);

@@ -1,16 +1,19 @@
 package connect;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import servlet.FilteredRequest;
+import servlet.ResponseData;
 
-import org.json.JSONArray;
+import java.sql.SQLException;
+
 
 public class Test {
-    public static void main(String[] args) throws SQLException {
+    public static void main(String[] args) throws SQLException, NoSuchFieldException {
         Connect c = new Connect();
-//        System.out.println(c.getCountRows("presentation_view"));
+//        FilteredRequest fr = new FilteredRequest("0", null, "щен", null, null, null, null);
+//        ResponseData rd = c.getResponseDataByPage(fr);
+//        rd.getView().forEach(e -> System.out.println(e.getInitials()));
+
+//        System.out.println(c.getResponseDataByPage("1"));
 //        c.getPresentationView(String.valueOf(0)).forEach(System.out::println);
 
     }
