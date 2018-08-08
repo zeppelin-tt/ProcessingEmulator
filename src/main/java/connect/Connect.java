@@ -1,13 +1,13 @@
 package connect;
 
-import java.sql.*;
-import java.util.*;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import servlet.FilteredRequest;
 import servlet.ResponseData;
 import servlet.TableFields;
+
+import java.sql.*;
+import java.util.*;
 
 public class Connect {
 
@@ -302,6 +302,7 @@ public class Connect {
         preparedStatement.execute();
         ResultSet rs = preparedStatement.executeQuery();
         List<TableFields> ltf = new ArrayList<>();
+
         while (rs.next()) {
             ltf.add(new TableFields(
                     rs.getString("id"),

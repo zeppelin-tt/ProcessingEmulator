@@ -1,5 +1,7 @@
 package servlet;
 
+import static utils.DataTimeUtils.formatDateTime;
+
 public class TableFields {
     private String id;
     private String accNum;
@@ -16,8 +18,8 @@ public class TableFields {
         this.initials = initials;
         this.balance = balance;
         this.action = action;
-        this.lastOpTime = lastOpTime;
-        this.createTime = createTime;
+        this.lastOpTime = formatDateTime(lastOpTime, "yyyy-MM-dd HH:mm:ss.SSSSSS", "yyyy.MM.dd hh:mm");
+        this.createTime = formatDateTime(createTime, "yyyy-MM-dd HH:mm:ss.SSSSSS", "yyyy.MM.dd hh:mm");
     }
 
     public String getId() {

@@ -11,7 +11,7 @@ import java.sql.SQLException;
 @Path("/account")
 public class ProcessingServlet {
 
-    Connect connect = new Connect();
+    private Connect connect = new Connect();
     private boolean result = false;
     private String message = null;
     private ResponseData responseData = null;
@@ -32,7 +32,7 @@ public class ProcessingServlet {
         return new ServerResponse(String.valueOf(result), message, responseData);
     }
 
-    @OPTIONS
+    @POST
     @Path("/filter")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
