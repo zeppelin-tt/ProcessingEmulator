@@ -66,4 +66,8 @@ public class Action {
         return type;
     }
 
+    @Override
+    public String toString() {
+        return "{" + type + " - " + lastName + " - " + firstName + " - " + patronymic + " - " + accNum + " - " + secondAccNum + " - " + money;
+    }
 }

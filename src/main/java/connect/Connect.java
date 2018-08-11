@@ -164,6 +164,7 @@ public class Connect {
         try {
             int historyIdFrom = transfer(accNumFrom, -money, false);
             int historyIdTo = transfer(accNumTo, money, false);
+
             String insTransfer = String.format("insert into public.transfer_operations values ('%1$s', '%2$s')", historyIdFrom, historyIdTo);
             statement.execute(insTransfer);
         } catch (SQLException e) {
@@ -285,6 +286,7 @@ public class Connect {
     private List<TableFields> getViewByPage(int numPage, String filter) throws SQLException {
         int startRow = numPage * LIMIT_ROWS;
         String sqlPresentation = String.format("SELECT * FROM presentation_view %3$s LIMIT '%1$s' OFFSET '%2$s'", LIMIT_ROWS, startRow, filter);
+        LOG.info("GET query: " + sqlPresentation);
         return getFromView(sqlPresentation);
     }
 
@@ -310,10 +312,11 @@ public class Connect {
                     rs.getString("initials"),
                     rs.getString("balance"),
                     rs.getString("action"),
-                    rs.getString("last_operation_time"),
-                    rs.getString("create_time")
+                    rs.getTimestamp("last_operation_time"),
+                    rs.getTimestamp("create_time")
             ));
         }
+//        ltf.forEach(e -> LOG.info(e.toString()));
         return ltf;
     }
 

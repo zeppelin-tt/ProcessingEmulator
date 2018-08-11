@@ -16,5 +16,7 @@ public class Test {
 //        System.out.println(c.getResponseDataByPage("1"));
 //        c.getPresentationView(String.valueOf(0)).forEach(System.out::println);
 
+//        c.transfer("2406996855991368", "2629260609955650", 500);
+
     }
 }

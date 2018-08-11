@@ -1,6 +1,8 @@
 package servlet;
 
-import static utils.DataTimeUtils.formatDateTime;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 
 public class TableFields {
     private String id;
@@ -12,14 +14,14 @@ public class TableFields {
     private String createTime;
 
 
-    public TableFields(String id, String accNum, String initials, String balance, String action, String lastOpTime, String createTime) {
+    public TableFields(String id, String accNum, String initials, String balance, String action, Date lastOpTime, Date createTime) {
         this.id = id;
         this.accNum = accNum;
         this.initials = initials;
         this.balance = balance;
         this.action = action;
-        this.lastOpTime = formatDateTime(lastOpTime, "yyyy-MM-dd HH:mm:ss.SSSSSS", "yyyy.MM.dd hh:mm");
-        this.createTime = formatDateTime(createTime, "yyyy-MM-dd HH:mm:ss.SSSSSS", "yyyy.MM.dd hh:mm");
+        this.lastOpTime = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss").format(lastOpTime);
+        this.createTime = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss").format(createTime);
     }
 
     public String getId() {
@@ -50,4 +52,12 @@ public class TableFields {
         return createTime;
     }
 
+    @Override
+    public String toString() {
+        return "{" + " id: " + id + ", accNum: " +
+                accNum + ", initials: " + initials +
+                ", balance: " + balance + ", action: " +
+                action + ", lastOpTime: " + lastOpTime +
+                ", createTime: " + createTime + " }";
+    }
 }

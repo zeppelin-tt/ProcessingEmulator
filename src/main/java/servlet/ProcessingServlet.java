@@ -2,6 +2,8 @@ package servlet;
 
 
 import connect.Connect;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -10,9 +12,10 @@ import java.sql.SQLException;
 
 @Path("/account")
 public class ProcessingServlet {
+    Logger LOG = LoggerFactory.getLogger(Connect.class);
 
     private Connect connect = new Connect();
-    private boolean result = false;
+    private boolean result = true;
     private String message = null;
     private ResponseData responseData = null;
 
@@ -25,9 +28,10 @@ public class ProcessingServlet {
     public ServerResponse getView(@PathParam("numPage") String numPage) {
         try {
             responseData = connect.getResponseDataByPage(numPage);
-            result = true;
         } catch (Exception e) {
+            result = false;
             message = e.getMessage();
+            LOG.info(message);
         }
         return new ServerResponse(String.valueOf(result), message, responseData);
     }
@@ -39,8 +43,8 @@ public class ProcessingServlet {
     public ServerResponse getFilteredView(FilteredRequest filteredRequest) {
         try {
             responseData = connect.getResponseDataByPage(filteredRequest);
-            result = true;
         } catch (Exception e) {
+            result = false;
             message = e.getMessage();
         }
         return new ServerResponse(String.valueOf(result), message, responseData);
@@ -51,6 +55,7 @@ public class ProcessingServlet {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     public ServerResponse doAction(Action action) {
+        LOG.info(action.toString());
         try {
             switch (action.getType()) {
                 case "create":
@@ -74,6 +79,7 @@ public class ProcessingServlet {
             }
         } catch (Exception e) {
             message = e.getMessage();
+            LOG.info(message);
         }
         return new ServerResponse(String.valueOf(result), message, null);
     }
