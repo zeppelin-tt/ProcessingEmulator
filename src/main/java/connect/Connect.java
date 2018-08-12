@@ -157,7 +157,6 @@ public class Connect {
         return success;
     }
 
-    // TODO: 06.08.2018 вообще не переводятся сейчас! обязательно починить!
     // TODO: 02.08.2018 при переводе на заблокированный счет дениги снимаются. Добавить исключение и ролбэк
     public boolean transfer(String accNumFrom, String accNumTo, float money) throws SQLException {
         connection.setAutoCommit(false);
@@ -286,7 +285,7 @@ public class Connect {
     private List<TableFields> getViewByPage(int numPage, String filter) throws SQLException {
         int startRow = numPage * LIMIT_ROWS;
         String sqlPresentation = String.format("SELECT * FROM presentation_view %3$s LIMIT '%1$s' OFFSET '%2$s'", LIMIT_ROWS, startRow, filter);
-        LOG.info("GET query: " + sqlPresentation);
+//        LOG.info("GET query: " + sqlPresentation);
         return getFromView(sqlPresentation);
     }
 

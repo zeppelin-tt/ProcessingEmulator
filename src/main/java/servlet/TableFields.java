@@ -20,8 +20,8 @@ public class TableFields {
         this.initials = initials;
         this.balance = balance;
         this.action = action;
-        this.lastOpTime = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss").format(lastOpTime);
-        this.createTime = new SimpleDateFormat("yyyy.MM.dd. HH:mm:ss").format(createTime);
+        this.lastOpTime = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss").format(lastOpTime);
+        this.createTime = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss").format(createTime);
     }
 
     public String getId() {
