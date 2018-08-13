@@ -2,6 +2,8 @@ package servlet;
 
 public class FilteredRequest {
     private String numPage;
+
+    private String limitRows;
     private String accNum;
     private String initials;
     private String balance;
@@ -12,6 +14,8 @@ public class FilteredRequest {
     public String getNumPage() {
         return numPage;
     }
+
+    public String getLimitRows() { return limitRows; }
 
     public String getAccNum() {
         return accNum;

@@ -109,15 +109,15 @@ public class Connect {
             isActive = rs.getBoolean("is_active");
         }
         if (accId == null) {
-            throw new NullPointerException("Счета с этим номером не существует: " + accNum);
+            throw new NullPointerException("Счета с этим номером не существует");
         } else {
             if (!isActive) {
-                checkNonActiveAcc(accNum, accId);
+                checkNonActiveAcc(accId);
             }
         }
     }
 
-    private void checkNonActiveAcc(String accNum, int accId) throws SQLException {
+    private void checkNonActiveAcc(int accId) throws SQLException {
         // TODO: 21.07.2018 не уверен, что это самый оптимальный селект
         String lastOpQ = String.format("SELECT type_operation FROM history where acc_id = %1$s AND timestamp = (SELECT max(timestamp) FROM history WHERE acc_id = %1$s)", accId);
         ResultSet rs = statement.executeQuery(lastOpQ);
@@ -125,14 +125,14 @@ public class Connect {
             int lastOp = rs.getInt("type_operation");
             switch (lastOp) {
                 case 4:
-                    throw new UnsupportedOperationException("Счет закрыт: " + accNum);
+                    throw new UnsupportedOperationException("Этот счет закрыт");
                 case 5:
-                    throw new UnsupportedOperationException("Счет заблокирован: " + accNum);
+                    throw new UnsupportedOperationException("Этот счет заблокирован");
                 default:
                     throw new Error("Ошибка в структуре базы. Обратитесь к администратору!");
             }
         } else {
-            throw new NullPointerException("В истории нет записи по данному счету: " + accNum);
+            throw new NullPointerException("В истории нет записи по данному счету");
         }
     }
 
@@ -261,30 +261,32 @@ public class Connect {
     }
 
 
-    public ResponseData getResponseDataByPage(String numPage) throws SQLException, NoSuchFieldException {
+    public ResponseData getResponseDataByPage(String numPage, String lRows) throws SQLException, NoSuchFieldException {
         int count = getCountRows("presentation_view");
         int pageNumber = Integer.parseInt(numPage);
-        checkPageNumber(pageNumber, count);
-        return new ResponseData(getViewByPage(pageNumber, ""), String.valueOf(count));
+        int limitRows = Integer.parseInt(lRows);
+        checkPageNumber(pageNumber, limitRows, count);
+        return new ResponseData(getViewByPage(pageNumber, limitRows,""), String.valueOf(count));
     }
 
     public ResponseData getResponseDataByPage(FilteredRequest filteredRequest) throws SQLException, NoSuchFieldException {
         int count = getCountRows("presentation_view");
         int pageNumber = Integer.parseInt(filteredRequest.getNumPage());
-        checkPageNumber(pageNumber, count);
+        int limitRows = Integer.parseInt(filteredRequest.getLimitRows());
+        checkPageNumber(pageNumber, limitRows, count);
         String filter = buildFilter(filteredRequest);
-        return new ResponseData(getViewByPage(pageNumber, filter), String.valueOf(count));
+        return new ResponseData(getViewByPage(pageNumber, limitRows, filter), String.valueOf(count));
     }
 
-    private void checkPageNumber(int pageNum, int count) throws NoSuchFieldException {
-        if (pageNum * (LIMIT_ROWS - 1) > count) {
+    private void checkPageNumber(int pageNum, int limitRows, int countRows) throws NoSuchFieldException {
+        if (pageNum * (limitRows - 1) > countRows) {
             throw new NoSuchFieldException("Такой страницы не существует");
         }
     }
 
-    private List<TableFields> getViewByPage(int numPage, String filter) throws SQLException {
-        int startRow = numPage * LIMIT_ROWS;
-        String sqlPresentation = String.format("SELECT * FROM presentation_view %3$s LIMIT '%1$s' OFFSET '%2$s'", LIMIT_ROWS, startRow, filter);
+    private List<TableFields> getViewByPage(int numPage, int limitRows, String filter) throws SQLException {
+        int startRow = numPage * limitRows;
+        String sqlPresentation = String.format("SELECT * FROM presentation_view %3$s LIMIT '%1$s' OFFSET '%2$s'", limitRows, startRow, filter);
 //        LOG.info("GET query: " + sqlPresentation);
         return getFromView(sqlPresentation);
     }

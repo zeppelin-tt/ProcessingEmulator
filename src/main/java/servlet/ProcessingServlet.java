@@ -23,11 +23,11 @@ public class ProcessingServlet {
     }
 
     @GET
-    @Path("/view/{numPage}")
+    @Path("/view/page={numPage}&limitRows={limitRows}")
     @Produces(MediaType.APPLICATION_JSON)
-    public ServerResponse getView(@PathParam("numPage") String numPage) {
+    public ServerResponse getView(@PathParam("numPage") String numPage, @PathParam("limitRows") String limitRows) {
         try {
-            responseData = connect.getResponseDataByPage(numPage);
+            responseData = connect.getResponseDataByPage(numPage, limitRows);
         } catch (Exception e) {
             result = false;
             message = e.getMessage();
@@ -78,6 +78,7 @@ public class ProcessingServlet {
                     break;
             }
         } catch (Exception e) {
+            result = false;
             message = e.getMessage();
             LOG.info(message);
         }
