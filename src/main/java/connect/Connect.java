@@ -12,11 +12,21 @@ import java.util.*;
 
 public class Connect {
 
-    private Connection connection;
-    private Statement statement;
+    private static final String SELECT_LAST_OP = "SELECT type_operation FROM history where acc_id = %1$s AND timestamp = (SELECT max(timestamp) FROM history WHERE acc_id = %1$s)";
+    private static final String UPDATE_IS_ACTIVE = "update public.accounts set is_active = %1$s where accnum = '%2$s' RETURNING id";
+    private static final String INSERT_TRANSFER_OPERATIONS = "insert into public.transfer_operations values ('%1$s', '%2$s')";
+    private static final String UPDATE_BALANCE = "update public.accounts set balance = '%1$s' where accnum = '%2$s' RETURNING id";
+    private static final String VIEW_BY_PAGE = "SELECT * FROM presentation_view %3$s LIMIT '%1$s' OFFSET '%2$s'";
+    private static final String SEARCH_ACCNUM = "select a.accnum from public.accounts a where a.accnum = '%s'";
+    private static final String GET_ID_BALANCE = "select id, balance from public.accounts where accnum = '%s'";
+    private static final String UPDATE_CLOSE = "update public.accounts set balance = '%1$s', is_active = %2$s where accnum = '%3$s'";
     private static final String INSERT_HISTORY = "insert into public.history values (default, '%1$s', '%2$s', '%3$s', %4$s) RETURNING id";
     private static final String SELECT_ACC_ROW = "select * from public.accounts where accnum = '%s'";
     private static final String SELECT_COUNT_ROWS = "select count(*) from public.%s";
+    private static final String CREATE_ACCOUNT = "insert into public.accounts values (default, '%1$s', '%2$s', '%3$s', '%4$s', '%5$s', default) RETURNING id";
+
+    private Connection connection;
+    private Statement statement;
     private boolean success = true;
 
     Logger LOG = LoggerFactory.getLogger(Connect.class);
@@ -55,10 +65,9 @@ public class Connect {
     }
 
     public boolean createAcc(String s, String f, String p) throws SQLException {
-        String sqlAccount = "insert into public.accounts values (default, '%1$s', '%2$s', '%3$s', '%4$s', '%5$s', default) RETURNING id";
         connection.setAutoCommit(false);
         try {
-            String accId = getColumnList(String.format(sqlAccount, s, f, p, generateAccNum(), 0), "id").get(0);
+            String accId = getColumnList(String.format(CREATE_ACCOUNT, s, f, p, generateAccNum(), 0), "id").get(0);
             statement.execute(String.format(INSERT_HISTORY, accId, 1, 0, "CURRENT_TIMESTAMP"));
             connection.commit();
         } catch (SQLException e) {
@@ -75,7 +84,7 @@ public class Connect {
         connection.setAutoCommit(false);
         try {
             checkAccNum(accNum);
-            String sqlSel = String.format("select id, balance from public.accounts where accnum = '%s'", accNum);
+            String sqlSel = String.format(GET_ID_BALANCE, accNum);
             ResultSet rs = statement.executeQuery(sqlSel);
             Integer accId = null;
             Float balance = null;
@@ -83,11 +92,9 @@ public class Connect {
                 accId = rs.getInt("id");
                 balance = rs.getFloat("balance");
             }
-            String sqlUpd = String.format("update public.accounts set balance = '%1$s', is_active = %2$s where accnum = '%3$s'", 0, "false", accNum);
+            String sqlUpd = String.format(UPDATE_CLOSE, 0, "false", accNum);
             statement.execute(sqlUpd);
             statement.execute(String.format(INSERT_HISTORY, accId, 3, -balance, "CURRENT_TIMESTAMP"));
-            // TODO: 20.07.2018 может сделать timestamp неуникальным?
-//            statement.execute(String.format(INSERT_HISTORY, accId, 4, 0, "CURRENT_TIMESTAMP + INTERVAL '0.000001' SECOND"));
             statement.execute(String.format(INSERT_HISTORY, accId, 4, 0, "CURRENT_TIMESTAMP"));
         } catch (SQLException e) {
             connection.rollback();
@@ -119,7 +126,7 @@ public class Connect {
 
     private void checkNonActiveAcc(int accId) throws SQLException {
         // TODO: 21.07.2018 не уверен, что это самый оптимальный селект
-        String lastOpQ = String.format("SELECT type_operation FROM history where acc_id = %1$s AND timestamp = (SELECT max(timestamp) FROM history WHERE acc_id = %1$s)", accId);
+        String lastOpQ = String.format(SELECT_LAST_OP, accId);
         ResultSet rs = statement.executeQuery(lastOpQ);
         if (rs.next()) {
             int lastOp = rs.getInt("type_operation");
@@ -140,7 +147,7 @@ public class Connect {
         connection.setAutoCommit(false);
         checkAccNum(accNum);
         try {
-            String sqlUpd = String.format("update public.accounts set is_active = %1$s where accnum = '%2$s' RETURNING id", "false", accNum);
+            String sqlUpd = String.format(UPDATE_IS_ACTIVE, "false", accNum);
             ResultSet rs = statement.executeQuery(sqlUpd);
             Integer accId = null;
             while (rs.next()) {
@@ -163,8 +170,7 @@ public class Connect {
         try {
             int historyIdFrom = transfer(accNumFrom, -money, false);
             int historyIdTo = transfer(accNumTo, money, false);
-
-            String insTransfer = String.format("insert into public.transfer_operations values ('%1$s', '%2$s')", historyIdFrom, historyIdTo);
+            String insTransfer = String.format(INSERT_TRANSFER_OPERATIONS, historyIdFrom, historyIdTo);
             statement.execute(insTransfer);
         } catch (SQLException e) {
             connection.rollback();
@@ -220,7 +226,7 @@ public class Connect {
         if (targetBalance > 10000000) {
             throw new IllegalArgumentException("У вас больше 10 миллионов! Поделитесь!");
         }
-        String sqlUpd = String.format("update public.accounts set balance = '%1$s' where accnum = '%2$s' RETURNING id", targetBalance, accNum);
+        String sqlUpd = String.format(UPDATE_BALANCE, targetBalance, accNum);
         ResultSet rs = statement.executeQuery(sqlUpd);
         Integer accId = null;
         while (rs.next()) {
@@ -228,7 +234,6 @@ public class Connect {
         }
         return accId;
     }
-
 
     public String buildFilter(FilteredRequest fr) {
         StringBuilder filter = new StringBuilder();
@@ -266,7 +271,7 @@ public class Connect {
         int pageNumber = Integer.parseInt(numPage);
         int limitRows = Integer.parseInt(lRows);
         checkPageNumber(pageNumber, limitRows, count);
-        return new ResponseData(getViewByPage(pageNumber, limitRows,""), String.valueOf(count));
+        return new ResponseData(getViewByPage(pageNumber, limitRows, ""), String.valueOf(count));
     }
 
     public ResponseData getResponseDataByPage(FilteredRequest filteredRequest) throws SQLException, NoSuchFieldException {
@@ -286,8 +291,7 @@ public class Connect {
 
     private List<TableFields> getViewByPage(int numPage, int limitRows, String filter) throws SQLException {
         int startRow = numPage * limitRows;
-        String sqlPresentation = String.format("SELECT * FROM presentation_view %3$s LIMIT '%1$s' OFFSET '%2$s'", limitRows, startRow, filter);
-//        LOG.info("GET query: " + sqlPresentation);
+        String sqlPresentation = String.format(VIEW_BY_PAGE, limitRows, startRow, filter);
         return getFromView(sqlPresentation);
     }
 
@@ -353,7 +357,7 @@ public class Connect {
     private String generateAccNum() {
         String accNum = generateRndAccNum();
         try {
-            while (isContainRows(String.format("select a.accnum from public.accounts a where a.accnum = '%s'", accNum))) {
+            while (isContainRows(String.format(SEARCH_ACCNUM, accNum))) {
                 accNum = generateRndAccNum();
             }
         } catch (SQLException e) {
