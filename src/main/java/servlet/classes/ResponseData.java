@@ -2,7 +2,7 @@ package servlet.classes;
 
 import java.util.List;
 
-public class ResponseData{
+public class ResponseData {
     private List<TableFields> view;
     private String countRows;
 

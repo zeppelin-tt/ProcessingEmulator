@@ -1,6 +1,5 @@
 package servlet.classes;
 
-import servlet.classes.ResponseData;
 
 public class ServerResponse {
 
