@@ -1,4 +1,4 @@
-package servlet;
+package servlet.classes;
 
 public class Action {
 

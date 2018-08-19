@@ -1,4 +1,4 @@
-package servlet;
+package servlet.classes;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;

@@ -2,9 +2,10 @@ package connect;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import servlet.FilteredRequest;
-import servlet.ResponseData;
-import servlet.TableFields;
+import servlet.classes.FilteredRequest;
+import servlet.classes.ResponseData;
+import servlet.classes.TableFields;
+import utils.Props;
 
 import java.sql.*;
 import java.util.*;
@@ -19,9 +20,8 @@ public class Connect {
     private boolean success = true;
 
     Logger LOG = LoggerFactory.getLogger(Connect.class);
-    public static final int LIMIT_ROWS = 10;
 
-    public Connect() throws SQLException {
+    public Connect() {
         openConnection();
     }
 
@@ -36,7 +36,7 @@ public class Connect {
         }
         LOG.info("PostgreSQL JDBC Driver Registered!");
         try {
-            connection = DriverManager.getConnection("jdbc:postgresql://localhost/postgres", "postgres", "11121987");
+            connection = DriverManager.getConnection(Props.get("db.url"), Props.get("db.name"), Props.get("db.pass"));
         } catch (SQLException e) {
             LOG.error("Connection Failed! Check output console");
             e.printStackTrace();
