@@ -10,6 +10,7 @@ public class FilteredRequest {
     private String action;
     private String lastOpTime;
     private String createTime;
+    private String hideClosed;
 
     public String getNumPage() {
         return numPage;
@@ -39,5 +40,9 @@ public class FilteredRequest {
 
     public String getCreateTime() {
         return createTime;
+    }
+
+    public String getHideClosed() {
+        return hideClosed;
     }
 }

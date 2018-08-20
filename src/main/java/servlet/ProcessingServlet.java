@@ -27,11 +27,11 @@ public class ProcessingServlet {
     }
 
     @GET
-    @Path("/view/page={numPage}&limitRows={limitRows}")
+    @Path("/view/page={numPage}&limitRows={limitRows}&hideClosed={hideClosed}")
     @Produces(MediaType.APPLICATION_JSON)
-    public ServerResponse getView(@PathParam("numPage") String numPage, @PathParam("limitRows") String limitRows) {
+    public ServerResponse getView(@PathParam("numPage") String numPage, @PathParam("limitRows") String limitRows, @PathParam("hideClosed") String hideClosed ) {
         try {
-            responseData = connect.getResponseDataByPage(numPage, limitRows);
+            responseData = connect.getResponseDataByPage(numPage, limitRows, hideClosed);
         } catch (Exception e) {
             result = false;
             message = e.getMessage();

@@ -266,21 +266,23 @@ public class Connect {
     }
 
 
-    public ResponseData getResponseDataByPage(String numPage, String lRows) throws SQLException, NoSuchFieldException {
+    public ResponseData getResponseDataByPage(String numPage, String lRows, String hideClosedAccNums) throws SQLException, NoSuchFieldException {
+        boolean hideClosed = Boolean.parseBoolean(hideClosedAccNums);
         int count = getCountRows("presentation_view");
         int pageNumber = Integer.parseInt(numPage);
         int limitRows = Integer.parseInt(lRows);
         checkPageNumber(pageNumber, limitRows, count);
-        return new ResponseData(getViewByPage(pageNumber, limitRows, ""), String.valueOf(count));
+        return new ResponseData(getViewByPage(pageNumber, limitRows, hideClosed, ""), String.valueOf(count));
     }
 
     public ResponseData getResponseDataByPage(FilteredRequest filteredRequest) throws SQLException, NoSuchFieldException {
         int count = getCountRows("presentation_view");
         int pageNumber = Integer.parseInt(filteredRequest.getNumPage());
         int limitRows = Integer.parseInt(filteredRequest.getLimitRows());
+        boolean hideClosed = Boolean.parseBoolean(filteredRequest.getHideClosed());
         checkPageNumber(pageNumber, limitRows, count);
         String filter = buildFilter(filteredRequest);
-        return new ResponseData(getViewByPage(pageNumber, limitRows, filter), String.valueOf(count));
+        return new ResponseData(getViewByPage(pageNumber, limitRows, hideClosed, filter), String.valueOf(count));
     }
 
     private void checkPageNumber(int pageNum, int limitRows, int countRows) throws NoSuchFieldException {
@@ -289,9 +291,14 @@ public class Connect {
         }
     }
 
-    private List<TableFields> getViewByPage(int numPage, int limitRows, String filter) throws SQLException {
+    private List<TableFields> getViewByPage(int numPage, int limitRows, boolean hideClosed, String filter) throws SQLException {
         int startRow = numPage * limitRows;
+        if (hideClosed) {
+            String condition = "is_active = TRUE ";
+            filter = "".equals(filter) ? " WHERE ".concat(condition) : filter.concat(" AND ").concat(condition);
+        }
         String sqlPresentation = String.format(VIEW_BY_PAGE, limitRows, startRow, filter);
+        LOG.info(sqlPresentation);
         return getFromView(sqlPresentation);
     }
 
