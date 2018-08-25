@@ -7,6 +7,8 @@ import servlet.classes.ResponseData;
 import servlet.classes.TableFields;
 import utils.Props;
 
+import java.math.BigDecimal;
+import java.security.InvalidAlgorithmParameterException;
 import java.sql.*;
 import java.util.*;
 
@@ -28,6 +30,7 @@ public class Connect {
     private Connection connection;
     private Statement statement;
     private boolean success = true;
+    private static final BigDecimal LIMIT_MONEY = new BigDecimal("10000000");
 
     Logger LOG = LoggerFactory.getLogger(Connect.class);
 
@@ -86,15 +89,17 @@ public class Connect {
             checkAccNum(accNum);
             String sqlSel = String.format(GET_ID_BALANCE, accNum);
             ResultSet rs = statement.executeQuery(sqlSel);
-            Integer accId = null;
-            Float balance = null;
-            while (rs.next()) {
+            Integer accId;
+            BigDecimal balance;
+            if (rs.next()) {
                 accId = rs.getInt("id");
-                balance = rs.getFloat("balance");
+                balance = rs.getBigDecimal("balance");
+            } else {
+                throw new SQLException("Такого аккаунта нет в Базе!");
             }
             String sqlUpd = String.format(UPDATE_CLOSE, 0, "false", accNum);
             statement.execute(sqlUpd);
-            statement.execute(String.format(INSERT_HISTORY, accId, 3, -balance, "CURRENT_TIMESTAMP"));
+            statement.execute(String.format(INSERT_HISTORY, accId, 3, balance.negate(), "CURRENT_TIMESTAMP"));
             statement.execute(String.format(INSERT_HISTORY, accId, 4, 0, "CURRENT_TIMESTAMP"));
         } catch (SQLException e) {
             connection.rollback();
@@ -165,10 +170,10 @@ public class Connect {
     }
 
     // TODO: 02.08.2018 при переводе на заблокированный счет дениги снимаются. Добавить исключение и ролбэк
-    public boolean transfer(String accNumFrom, String accNumTo, float money) throws SQLException {
+    public boolean transfer(String accNumFrom, String accNumTo, BigDecimal money) throws SQLException, InvalidAlgorithmParameterException {
         connection.setAutoCommit(false);
         try {
-            int historyIdFrom = transfer(accNumFrom, -money, false);
+            int historyIdFrom = transfer(accNumFrom, money.negate(), false);
             int historyIdTo = transfer(accNumTo, money, false);
             String insTransfer = String.format(INSERT_TRANSFER_OPERATIONS, historyIdFrom, historyIdTo);
             statement.execute(insTransfer);
@@ -183,11 +188,12 @@ public class Connect {
     }
 
     // TODO: 20.07.2018 запрет на работу с неактуальными счетами
-    public boolean transfer(String accNum, float money) throws SQLException {
+    public boolean transfer(String accNum, BigDecimal money) throws SQLException, InvalidAlgorithmParameterException {
+        LOG.info("Money: " + money);
         return transfer(accNum, money, true) != null;
     }
 
-    private Integer transfer(String accNum, float money, boolean commitTran) throws SQLException {
+    private Integer transfer(String accNum, BigDecimal money, boolean commitTran) throws SQLException, InvalidAlgorithmParameterException {
         checkAccNum(accNum);
         Integer historyId = null;
         if (commitTran) {
@@ -195,8 +201,10 @@ public class Connect {
         }
         try {
             int accId = updateBalance(accNum, money);
-            // TODO: 19.07.2018 что с 0 лучше сделать?
-            int typeOperation = money > 0 ? 2 : 3;
+            if (money.compareTo(BigDecimal.ZERO) == 0) {
+                throw new InvalidAlgorithmParameterException("Вы не можете выполнить операцию с нулевой суммой!");
+            }
+            int typeOperation = money.compareTo(BigDecimal.ZERO) < 0 ? 3 : 2;
             ResultSet rs = statement.executeQuery(String.format(INSERT_HISTORY, accId, typeOperation, money, "CURRENT_TIMESTAMP"));
             while (rs.next()) {
                 historyId = rs.getInt("id");
@@ -215,16 +223,18 @@ public class Connect {
         return historyId;
     }
 
-    private Integer updateBalance(String accNum, float money) throws SQLException {
+    private Integer updateBalance(String accNum, BigDecimal money) throws SQLException, IllegalArgumentException {
         Map<String, String> rowMap = getRowByAccNum(accNum);
-        float balance = Float.valueOf(rowMap.get("balance"));
-        float targetBalance = balance + money;
-        if (targetBalance < 0) {
-            // TODO: 19.07.2018 какое здесь лучше выкинуть?
+        BigDecimal balance = new BigDecimal(rowMap.get("balance"));
+        BigDecimal targetBalance = balance.add(money);
+        LOG.info("Денег после операции: " + targetBalance.toString());
+        LOG.info(String.valueOf(targetBalance.compareTo(LIMIT_MONEY)));
+        if (targetBalance.compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Баланс не может быть отрицательным.");
         }
-        if (targetBalance > 10000000) {
-            throw new IllegalArgumentException("У вас больше 10 миллионов! Поделитесь!");
+        if (targetBalance.compareTo(LIMIT_MONEY) >= 0) {
+            LOG.info("У вас больше 10 миллионов! Это слишком много!");
+            throw new IllegalArgumentException("У вас больше 10 миллионов! Это слишком много!");
         }
         String sqlUpd = String.format(UPDATE_BALANCE, targetBalance, accNum);
         ResultSet rs = statement.executeQuery(sqlUpd);
@@ -328,7 +338,6 @@ public class Connect {
                     rs.getTimestamp("create_time")
             ));
         }
-//        ltf.forEach(e -> LOG.info(e.toString()));
         return ltf;
     }
 

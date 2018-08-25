@@ -11,6 +11,7 @@ import servlet.classes.ServerResponse;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+import java.math.BigDecimal;
 import java.sql.SQLException;
 
 
@@ -72,13 +73,13 @@ public class ProcessingServlet {
                     result = connect.blockAcc(action.getAccNum());
                     break;
                 case "transfer_minus":
-                    result = connect.transfer(action.getAccNum(), -Float.valueOf(action.getMoney()));
+                    result = connect.transfer(action.getAccNum(), new BigDecimal("-".concat(action.getMoney())));
                     break;
                 case "transfer_plus":
-                    result = connect.transfer(action.getAccNum(), Float.valueOf(action.getMoney()));
+                    result = connect.transfer(action.getAccNum(), new BigDecimal(action.getMoney()));
                     break;
                 case "transfer_to":
-                    result = connect.transfer(action.getAccNum(), action.getSecondAccNum(), Float.valueOf(action.getMoney()));
+                    result = connect.transfer(action.getAccNum(), action.getSecondAccNum(), new BigDecimal(action.getMoney()));
                     break;
             }
         } catch (Exception e) {
