@@ -15,7 +15,8 @@ import java.util.*;
 
 public class Connect {
 
-    private static final String SELECT_LAST_OP = "SELECT type_operation FROM history where acc_id = %1$s AND timestamp = (SELECT max(timestamp) FROM history WHERE acc_id = %1$s)";
+    private static final String SELECT_LAST_OP = "SELECT CASE WHEN count(*) > 1 AND bool_or(h.type_operation = 4) THEN 4 ELSE max(h.type_operation) END as type_operation" +
+            "FROM history h WHERE acc_id = %1$s AND timestamp = (SELECT max(timestamp) FROM history WHERE acc_id = %1$s)";
     private static final String UPDATE_IS_ACTIVE = "update public.accounts set is_active = %1$s where accnum = '%2$s' RETURNING id";
     private static final String INSERT_TRANSFER_OPERATIONS = "insert into public.transfer_operations values ('%1$s', '%2$s')";
     private static final String UPDATE_BALANCE = "update public.accounts set balance = '%1$s' where accnum = '%2$s' RETURNING id";
