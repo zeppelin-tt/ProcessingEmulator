@@ -9,6 +9,7 @@ import utils.Props;
 
 import java.math.BigDecimal;
 import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidParameterException;
 import java.sql.*;
 import java.util.*;
 
@@ -111,8 +112,16 @@ public class Connect {
         return success;
     }
 
-    // TODO: 20.07.2018 или все же сделать булевым метод?
-    private void checkAccNum(String accNum) throws SQLException {
+    private void checkAccNum(String accNum) throws SQLException, InvalidParameterException {
+        checkAccNum(accNum, "клиента ");
+    }
+    private void checkAccNum(String accNum, String personName) throws SQLException, InvalidParameterException{
+        if (accNum.length() > 16) {
+            throw new InvalidParameterException("Счет ".concat(personName).concat("слишком длинный. Должен быть 16 символов."));
+        }
+        if (accNum.length() < 16) {
+            throw new InvalidParameterException("Счет ".concat(personName).concat("слишком короткий. Должен быть 16 символов."));
+        }
         ResultSet rs = statement.executeQuery(String.format(SELECT_ACC_ROW, accNum));
         Integer accId = null;
         boolean isActive = false;
@@ -121,30 +130,29 @@ public class Connect {
             isActive = rs.getBoolean("is_active");
         }
         if (accId == null) {
-            throw new NullPointerException("Счета с этим номером не существует");
+            throw new NullPointerException("Счета ".concat(personName).concat("с этим номером не существует"));
         } else {
             if (!isActive) {
-                checkNonActiveAcc(accId);
+                checkNonActiveAcc(accId, personName);
             }
         }
     }
 
-    private void checkNonActiveAcc(int accId) throws SQLException {
-        // TODO: 21.07.2018 не уверен, что это самый оптимальный селект
+    private void checkNonActiveAcc(int accId, String personName) throws SQLException {
         String lastOpQ = String.format(SELECT_LAST_OP, accId);
         ResultSet rs = statement.executeQuery(lastOpQ);
         if (rs.next()) {
             int lastOp = rs.getInt("type_operation");
             switch (lastOp) {
                 case 4:
-                    throw new UnsupportedOperationException("Этот счет закрыт");
+                    throw new UnsupportedOperationException("Счёт ".concat(personName).concat("закрыт"));
                 case 5:
-                    throw new UnsupportedOperationException("Этот счет заблокирован");
+                    throw new UnsupportedOperationException("Счёт ".concat(personName).concat("заблокирован"));
                 default:
                     throw new Error("Ошибка в структуре базы. Обратитесь к администратору!");
             }
         } else {
-            throw new NullPointerException("В истории нет записи по данному счету");
+            throw new NullPointerException("В истории нет записи по счёту ".concat(personName).trim());
         }
     }
 
@@ -173,6 +181,7 @@ public class Connect {
     public boolean transfer(String accNumFrom, String accNumTo, BigDecimal money) throws SQLException, InvalidAlgorithmParameterException {
         connection.setAutoCommit(false);
         try {
+            checkAccNum(accNumTo, "получателя ");
             int historyIdFrom = transfer(accNumFrom, money.negate(), false);
             int historyIdTo = transfer(accNumTo, money, false);
             String insTransfer = String.format(INSERT_TRANSFER_OPERATIONS, historyIdFrom, historyIdTo);
@@ -187,9 +196,7 @@ public class Connect {
         return success;
     }
 
-    // TODO: 20.07.2018 запрет на работу с неактуальными счетами
     public boolean transfer(String accNum, BigDecimal money) throws SQLException, InvalidAlgorithmParameterException {
-        LOG.info("Money: " + money);
         return transfer(accNum, money, true) != null;
     }
 
