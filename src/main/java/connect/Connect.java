@@ -230,7 +230,7 @@ public class Connect {
         LOG.info("Денег после операции: " + targetBalance.toString());
         LOG.info(String.valueOf(targetBalance.compareTo(LIMIT_MONEY)));
         if (targetBalance.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Баланс не может быть отрицательным.");
+            throw new IllegalArgumentException("Баланс не может быть отрицательным!");
         }
         if (targetBalance.compareTo(LIMIT_MONEY) >= 0) {
             LOG.info("У вас больше 10 миллионов! Это слишком много!");
