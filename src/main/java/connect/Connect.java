@@ -15,13 +15,13 @@ import java.util.*;
 
 public class Connect {
 
-    private static final String SELECT_LAST_OP = "SELECT CASE WHEN count(*) > 1 AND bool_or(h.type_operation = 4) THEN 4 ELSE max(h.type_operation) END as type_operation" +
+    private static final String SELECT_LAST_OP = "SELECT CASE WHEN count(*) > 1 AND bool_or(h.type_operation = 4) THEN 4 ELSE max(h.type_operation) END as type_operation " +
             "FROM history h WHERE acc_id = %1$s AND timestamp = (SELECT max(timestamp) FROM history WHERE acc_id = %1$s)";
     private static final String UPDATE_IS_ACTIVE = "update public.accounts set is_active = %1$s where accnum = '%2$s' RETURNING id";
     private static final String INSERT_TRANSFER_OPERATIONS = "insert into public.transfer_operations values ('%1$s', '%2$s')";
     private static final String UPDATE_BALANCE = "update public.accounts set balance = '%1$s' where accnum = '%2$s' RETURNING id";
     private static final String VIEW_BY_PAGE = "SELECT * FROM presentation_view %3$s LIMIT '%1$s' OFFSET '%2$s'";
-    private static final String SEARCH_ACCNUM = "select a.accnum from public.accounts a where a.accnum = '%s'";
+    private static final String SEARCH_ACC_NUM = "select a.accnum from public.accounts a where a.accnum = '%s'";
     private static final String GET_ID_BALANCE = "select id, balance from public.accounts where accnum = '%s'";
     private static final String UPDATE_CLOSE = "update public.accounts set balance = '%1$s', is_active = %2$s where accnum = '%3$s'";
     private static final String INSERT_HISTORY = "insert into public.history values (default, '%1$s', '%2$s', '%3$s', %4$s) RETURNING id";
@@ -131,7 +131,7 @@ public class Connect {
             isActive = rs.getBoolean("is_active");
         }
         if (accId == null) {
-            throw new NullPointerException("Счета ".concat(personName).concat("с этим номером не существует"));
+            throw new NullPointerException("Счёта ".concat(personName).concat("с этим номером не существует"));
         } else {
             if (!isActive) {
                 checkNonActiveAcc(accId, personName);
@@ -141,6 +141,7 @@ public class Connect {
 
     private void checkNonActiveAcc(int accId, String personName) throws SQLException {
         String lastOpQ = String.format(SELECT_LAST_OP, accId);
+        LOG.info(lastOpQ);
         ResultSet rs = statement.executeQuery(lastOpQ);
         if (rs.next()) {
             int lastOp = rs.getInt("type_operation");
@@ -178,10 +179,10 @@ public class Connect {
         return success;
     }
 
-    // TODO: 02.08.2018 при переводе на заблокированный счет дениги снимаются. Добавить исключение и ролбэк
     public boolean transfer(String accNumFrom, String accNumTo, BigDecimal money) throws SQLException, InvalidAlgorithmParameterException {
         connection.setAutoCommit(false);
         try {
+            checkAccNum(accNumFrom, "клиента ");
             checkAccNum(accNumTo, "получателя ");
             int historyIdFrom = transfer(accNumFrom, money.negate(), false);
             int historyIdTo = transfer(accNumTo, money, false);
@@ -241,8 +242,7 @@ public class Connect {
             throw new IllegalArgumentException("Баланс не может быть отрицательным!");
         }
         if (targetBalance.compareTo(LIMIT_MONEY) >= 0) {
-            LOG.info("У вас больше 10 миллионов! Это слишком много!");
-            throw new IllegalArgumentException("У вас больше 10 миллионов! Это слишком много!");
+            throw new IllegalArgumentException("Результатом операции не может быть сумма, превышающая 10 миллионов!");
         }
         String sqlUpd = String.format(UPDATE_BALANCE, targetBalance, accNum);
         ResultSet rs = statement.executeQuery(sqlUpd);
@@ -381,7 +381,7 @@ public class Connect {
     private String generateAccNum() {
         String accNum = generateRndAccNum();
         try {
-            while (isContainRows(String.format(SEARCH_ACCNUM, accNum))) {
+            while (isContainRows(String.format(SEARCH_ACC_NUM, accNum))) {
                 accNum = generateRndAccNum();
             }
         } catch (SQLException e) {
