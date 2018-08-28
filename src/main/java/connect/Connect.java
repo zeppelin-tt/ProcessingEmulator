@@ -444,7 +444,6 @@ public class Connect {
             filter = "".equals(filter) ? " WHERE ".concat(condition) : filter.concat(" AND ").concat(condition);
         }
         String sqlPresentation = String.format(VIEW_BY_PAGE, limitRows, startRow, filter);
-        LOG.info(sqlPresentation);
         return getFromView(sqlPresentation);
     }
 
