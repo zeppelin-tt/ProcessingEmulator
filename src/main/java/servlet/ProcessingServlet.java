@@ -41,6 +41,9 @@ public class ProcessingServlet {
         return new ServerResponse(String.valueOf(result), message, responseData);
     }
 
+    /**
+     * не реализован на фронете
+     */
     @POST
     @Path("/filter")
     @Consumes(MediaType.APPLICATION_JSON)

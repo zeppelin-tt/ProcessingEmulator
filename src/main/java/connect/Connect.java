@@ -40,6 +40,9 @@ public class Connect {
         openConnection();
     }
 
+    /**
+     * установка соединения с бд
+     */
     private void openConnection() {
         LOG.info("PostgreSQL JDBC Connection Testing");
         try {
@@ -69,6 +72,14 @@ public class Connect {
         }
     }
 
+    /**
+     * создание аккаунта
+     * @param s фамилия
+     * @param f имя
+     * @param p отчество
+     * @return true/false
+     * @throws SQLException
+     */
     public boolean createAcc(String s, String f, String p) throws SQLException {
         connection.setAutoCommit(false);
         try {
@@ -85,6 +96,14 @@ public class Connect {
         return success;
     }
 
+    /**
+     * закрытие аккаунта
+     * 1. table (accounts) - is_active = false, balance = 0
+     * 2. table (history) - Снимаем деньги до 0, Закрываем.
+     * @param accNum
+     * @return
+     * @throws SQLException
+     */
     public boolean closeAcc(String accNum) throws SQLException {
         connection.setAutoCommit(false);
         try {
@@ -113,9 +132,27 @@ public class Connect {
         return success;
     }
 
+    /**
+     * проверка валидности номера аккаунта
+     * personName дефолтно - клиент
+     * @param accNum номер аккаунта
+     * @throws SQLException
+     * @throws InvalidParameterException
+     */
     private void checkAccNum(String accNum) throws SQLException, InvalidParameterException {
         checkAccNum(accNum, "клиента ");
     }
+
+    /**
+     * проверка валидности номера аккаунта
+     * 1. проверка длицы строчного номера аккаунта
+     * 2. проверка на существование аккаунта в бд
+     * 3. если аккаунт неактивный - дополнительные проверки checkNonActiveAcc
+     * @param accNum номер аккаунта
+     * @param personName "киент "/"получатель "
+     * @throws SQLException
+     * @throws InvalidParameterException
+     */
     private void checkAccNum(String accNum, String personName) throws SQLException, InvalidParameterException{
         if (accNum.length() > 16) {
             throw new InvalidParameterException("Счет ".concat(personName).concat("слишком длинный. Должен быть 16 символов."));
@@ -139,6 +176,15 @@ public class Connect {
         }
     }
 
+    /**
+     * ловит исключения работы с неактивными аккаунтами
+     * 1. с закрытыми аккаунтами
+     * 2. с заблокированными аккаунтами
+     * 3. серверные ошибки/сбои
+     * @param accId
+     * @param personName
+     * @throws SQLException
+     */
     private void checkNonActiveAcc(int accId, String personName) throws SQLException {
         String lastOpQ = String.format(SELECT_LAST_OP, accId);
         LOG.info(lastOpQ);
@@ -158,6 +204,14 @@ public class Connect {
         }
     }
 
+    /**
+     * блокировка аккаунта
+     * 1. table (accounts) - флаг is_active = false
+     * 2. table (history) - операция "Закрытие".
+     * @param accNum номер аккаунта
+     * @return true/false
+     * @throws SQLException
+     */
     public boolean blockAcc(String accNum) throws SQLException {
         connection.setAutoCommit(false);
         checkAccNum(accNum);
@@ -179,6 +233,18 @@ public class Connect {
         return success;
     }
 
+    /**
+     * перевод денег другому клиенту банка
+     * 1. проверка двух номеров аккаунтов
+     * 2. выполнение операций пополнение и снятие внури одной транзацкии (time_stamp один на 2 операции)
+     * 3. операции связываются в таблице transfer_operations по id из history
+     * @param accNumFrom номер аккаунта отправителя
+     * @param accNumTo номер аккаунта получателя
+     * @param money сумма денег
+     * @return true/false
+     * @throws SQLException
+     * @throws InvalidAlgorithmParameterException
+     */
     public boolean transfer(String accNumFrom, String accNumTo, BigDecimal money) throws SQLException, InvalidAlgorithmParameterException {
         connection.setAutoCommit(false);
         try {
@@ -198,10 +264,28 @@ public class Connect {
         return success;
     }
 
+    /**
+     * перевод/снятие денег (зависит от знака +-)
+     * по дефолту стоит автокоммит транзакции
+     * @param accNum номер аккаунта
+     * @param money сумма денег
+     * @return true/false
+     * @throws SQLException
+     * @throws InvalidAlgorithmParameterException
+     */
     public boolean transfer(String accNum, BigDecimal money) throws SQLException, InvalidAlgorithmParameterException {
         return transfer(accNum, money, true) != null;
     }
 
+    /**
+     * перевод/снятие денег (зависит от знака +-)
+     * @param accNum номер аккаунта
+     * @param money сумма денег
+     * @param commitTran AutoCommit true/false
+     * @return id из history
+     * @throws SQLException
+     * @throws InvalidAlgorithmParameterException
+     */
     private Integer transfer(String accNum, BigDecimal money, boolean commitTran) throws SQLException, InvalidAlgorithmParameterException {
         checkAccNum(accNum);
         Integer historyId = null;
@@ -232,6 +316,14 @@ public class Connect {
         return historyId;
     }
 
+    /**
+     * изменение баланса с проверкой исключений
+     * @param accNum номер аккаунта
+     * @param money сумма денег
+     * @return id аккаунта
+     * @throws SQLException
+     * @throws IllegalArgumentException
+     */
     private Integer updateBalance(String accNum, BigDecimal money) throws SQLException, IllegalArgumentException {
         Map<String, String> rowMap = getRowByAccNum(accNum);
         BigDecimal balance = new BigDecimal(rowMap.get("balance"));
@@ -253,6 +345,11 @@ public class Connect {
         return accId;
     }
 
+    /**
+     * динамический филтр (не реализован на фронте)
+     * @param fr отфилтрованный запрос
+     * @return
+     */
     public String buildFilter(FilteredRequest fr) {
         StringBuilder filter = new StringBuilder();
         filter.append("where");
@@ -283,7 +380,15 @@ public class Connect {
         return filter.toString();
     }
 
-
+    /**
+     * подготовка ответа на фронт по номеру страницы
+     * @param numPage номер страницы из запроса
+     * @param lRows лимит строк в странице
+     * @param hideClosedAccNums  показывать/нет закрытые/заблокированный аккаунты
+     * @return ResponseData
+     * @throws SQLException
+     * @throws NoSuchFieldException
+     */
     public ResponseData getResponseDataByPage(String numPage, String lRows, String hideClosedAccNums) throws SQLException, NoSuchFieldException {
         boolean hideClosed = Boolean.parseBoolean(hideClosedAccNums);
         int count = getCountRows("presentation_view");
@@ -293,6 +398,13 @@ public class Connect {
         return new ResponseData(getViewByPage(pageNumber, limitRows, hideClosed, ""), String.valueOf(count));
     }
 
+    /**
+     * подготовка ответа на фронт (не реализован на фронте)
+     * @param filteredRequest отфилтрованный запрос
+     * @return ResponseData
+     * @throws SQLException
+     * @throws NoSuchFieldException
+     */
     public ResponseData getResponseDataByPage(FilteredRequest filteredRequest) throws SQLException, NoSuchFieldException {
         int count = getCountRows("presentation_view");
         int pageNumber = Integer.parseInt(filteredRequest.getNumPage());
@@ -303,12 +415,28 @@ public class Connect {
         return new ResponseData(getViewByPage(pageNumber, limitRows, hideClosed, filter), String.valueOf(count));
     }
 
+    /**
+     * проверка на существование страницы по запросу
+     * @param pageNum номер страницы из запроса
+     * @param limitRows лимит строк на странице
+     * @param countRows количество строк всего в view
+     * @throws NoSuchFieldException
+     */
     private void checkPageNumber(int pageNum, int limitRows, int countRows) throws NoSuchFieldException {
         if (pageNum * (limitRows - 1) > countRows) {
             throw new NoSuchFieldException("Такой страницы не существует");
         }
     }
 
+    /**
+     * для отправки на фронт данных из view c пагинацией
+     * @param numPage номер страницы
+     * @param limitRows лимит строк (приходит с фронта)
+     * @param hideClosed показывать/нет закрытые/заблокированный аккаунты
+     * @param filter фильтр (на фронте не реализован)
+     * @return массив TableFields
+     * @throws SQLException
+     */
     private List<TableFields> getViewByPage(int numPage, int limitRows, boolean hideClosed, String filter) throws SQLException {
         int startRow = numPage * limitRows;
         if (hideClosed) {
@@ -320,6 +448,12 @@ public class Connect {
         return getFromView(sqlPresentation);
     }
 
+    /**
+     * считает количество строк в заданной таблице
+     * @param nameTable имя таблицы
+     * @return кол-во строк
+     * @throws SQLException
+     */
     private Integer getCountRows(String nameTable) throws SQLException {
         Integer count = null;
         ResultSet rs = statement.executeQuery(String.format(SELECT_COUNT_ROWS, nameTable));
@@ -329,6 +463,12 @@ public class Connect {
         return count;
     }
 
+    /**
+     * массив TableFields по запросу
+     * @param sql
+     * @return массив TableFields
+     * @throws SQLException
+     */
     private List<TableFields> getFromView(String sql) throws SQLException {
         PreparedStatement preparedStatement = connection.prepareStatement(sql);
         preparedStatement.execute();
@@ -349,6 +489,12 @@ public class Connect {
         return ltf;
     }
 
+    /**
+     * row с аккаунтом
+     * @param accNum номер аккаунта
+     * @return row из accounts (все значения Sting)
+     * @throws SQLException
+     */
     private Map<String, String> getRowByAccNum(String accNum) throws SQLException {
         Map<String, String> rowMap = new HashMap<>();
         ResultSet rs = statement.executeQuery(String.format(SELECT_ACC_ROW, accNum));
@@ -361,6 +507,12 @@ public class Connect {
         return rowMap;
     }
 
+    /**
+     * проверка наличия хотя бы однйо строки в бд по условию из селекта
+     * @param select
+     * @return
+     * @throws SQLException
+     */
     private boolean isContainRows(String select) throws SQLException {
         ResultSet rs = statement.executeQuery(select);
         while (rs.next()) {
@@ -369,6 +521,13 @@ public class Connect {
         return false;
     }
 
+    /**
+     * массив значений одного столбца по названию и селекту
+     * @param select
+     * @param column имя столбца
+     * @return
+     * @throws SQLException
+     */
     private List<String> getColumnList(String select, String column) throws SQLException {
         ResultSet rs = statement.executeQuery(select);
         List<String> list = new ArrayList<>();
@@ -378,6 +537,11 @@ public class Connect {
         return list;
     }
 
+    /**
+     * генетарор случайного номара аккаунта (16 цифр)
+     * с проверкой уникальности
+     * @return новый уникальный номер аккаунта
+     */
     private String generateAccNum() {
         String accNum = generateRndAccNum();
         try {
@@ -390,6 +554,11 @@ public class Connect {
         return accNum;
     }
 
+    /**
+     * генератор случайного номера аккаунта
+     * может начинаться с [0]+
+     * @return квазиуникальный номер аккаунта
+     */
     private String generateRndAccNum() {
         StringBuilder sb = new StringBuilder();
         String numStr = String.valueOf(generateRndLong((long) Math.pow(10, 16) - 1));
@@ -401,6 +570,11 @@ public class Connect {
         return sb.toString();
     }
 
+    /**
+     * генератор стучайного числа L
+     * @param max максимальный диапазон
+     * @return
+     */
     private long generateRndLong(long max) {
         return (long) (new Random().nextDouble() * max);
     }
