@@ -245,11 +245,14 @@ public class Connect {
      * @throws SQLException
      * @throws InvalidAlgorithmParameterException
      */
-    public boolean transfer(String accNumFrom, String accNumTo, BigDecimal money) throws SQLException, InvalidAlgorithmParameterException {
+    public boolean transfer(String accNumFrom, String accNumTo, BigDecimal money) throws SQLException, InvalidAlgorithmParameterException, InvalidParameterException {
         connection.setAutoCommit(false);
         try {
             checkAccNum(accNumFrom, "клиента ");
             checkAccNum(accNumTo, "получателя ");
+            if (accNumFrom.equals(accNumTo)) {
+                throw new InvalidParameterException("Номер заказчика не может быть равен номеру получателя!");
+            }
             int historyIdFrom = transfer(accNumFrom, money.negate(), false);
             int historyIdTo = transfer(accNumTo, money, false);
             String insTransfer = String.format(INSERT_TRANSFER_OPERATIONS, historyIdFrom, historyIdTo);
